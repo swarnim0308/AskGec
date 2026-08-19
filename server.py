@@ -15,17 +15,22 @@ if os.environ.get("USE_NGROK") == "1":
         print(f"Could not initialize ngrok: {e}")
 
 @app.route('/', methods=['GET', 'POST'])
-def home(bot_id = 'Government Engineering College Bilaspur'):
+def home():
+	bot_id = 'Government Engineering College Bilaspur'
 	if bot_id not in table:
 		create_bot()
 	if request.method == 'POST':
-		if bot_id in table:
+		try:
 			context = table[bot_id]['context']
-			question = request.form.get('ques');
-			prev_q = request.form.get('prev_q');
-			prev_a = request.form.get('prev_a');
+			question = request.form.get('ques') or ''
+			prev_q = request.form.get('prev_q') or ''
+			prev_a = request.form.get('prev_a') or ''
 			answer = iq.predict(context, question, prev_q, prev_a)			
 			return answer
+		except Exception as e:
+			import traceback
+			traceback.print_exc()
+			return str(e), 500
 	if request.method == 'GET':
 		if bot_id not in table:
 			bot_id = "Oops! Bot not found!"

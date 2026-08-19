@@ -109,7 +109,7 @@ def str_to_coqa_example(contenxt, question, prev_ques, prev_answ):
 
 	example = CoQAExample(
 				qas_id='random',
-				question_text=question_text,
+				question_text=question_text or "",
 				doc_tokens=doc_tokens,
 				orig_answer_text="",
 				start_position=0,
@@ -118,8 +118,8 @@ def str_to_coqa_example(contenxt, question, prev_ques, prev_answ):
 				is_yes= False,
 				is_no=False,
 				answer_span="",
-				prev_ques=prev_ques,
-				prev_answ=prev_answ)
+				prev_ques=prev_ques or "",
+				prev_answ=prev_answ or "")
 	return example
 
 class InferCoQA():
