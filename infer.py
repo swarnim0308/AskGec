@@ -26,6 +26,39 @@ else:
 	import pickle
 
 from infer_utils import *
+import string
+import re
+
+STOPWORDS = {'what', 'is', 'the', 'a', 'an', 'of', 'in', 'and', 'for', 'to', 'where', 'how', 'who', 'which', 'are', 'can', 'you', 'tell', 'me', 'about'}
+
+def extract_fallback_answer(context, question):
+	clean_q = question.translate(str.maketrans('', '', string.punctuation)).lower()
+	q_words = set(clean_q.split()) - STOPWORDS
+	if not q_words:
+		q_words = set(clean_q.split()) - {'what', 'is', 'the', 'a', 'an'}
+	if not q_words:
+		return ""
+	
+	# Pre-process text to avoid splitting on Dr. or i.e.
+	text = context.replace('Dr.', 'Dr_').replace('i.e.', 'ie_')
+	raw_sentences = [s.replace('Dr_', 'Dr.').replace('ie_', 'i.e.').strip() for s in re.split(r'(?<=[.!?])\s+|\n', text) if s.strip()]
+	
+	best_sent = None
+	best_score = 0
+	
+	for sent in raw_sentences:
+		clean_s = sent.translate(str.maketrans('', '', string.punctuation)).lower()
+		s_words = set(clean_s.split())
+		overlap = len(q_words & s_words)
+		if overlap > best_score:
+			best_score = overlap
+			best_sent = sent
+			
+	if best_sent and best_score > 0:
+		return best_sent
+	return ""
+
+
 
 def is_whitespace(c):
 		if c == " " or c == "\t" or c == "\r" or c == "\n" or ord(c) == 0x202F:
@@ -139,6 +172,12 @@ class InferCoQA():
 		res = json.loads(open(output_prediction_file).read())['random']
 		os.remove(output_prediction_file)
 		print('inference time :',time.time() - t )
+
+		fallback = extract_fallback_answer(contenxt, question)
+		if fallback:
+			res = fallback
+
 		return res
+
 
 
