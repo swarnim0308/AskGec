@@ -26,8 +26,6 @@ else:
 	import pickle
 
 from infer_utils import *
-import spacy
-nlp = spacy.load('en_core_web_md')
 
 def is_whitespace(c):
 		if c == " " or c == "\t" or c == "\r" or c == "\n" or ord(c) == 0x202F:
@@ -93,10 +91,12 @@ def str_to_coqa_example(contenxt, question, prev_ques, prev_answ):
 
 class InferCoQA():
 	def __init__(self, model_path, lower_case = True):
+		if not os.path.exists(model_path):
+			model_path = 'bert-base-uncased'
 		self.model_path = model_path
 		self.tokenizer = BertTokenizer.from_pretrained(model_path, do_lower_case=lower_case)
 		self.model = BertForQuestionAnswering.from_pretrained(model_path)
-		self.device = torch.device("cuda")
+		self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 		self.model.to(self.device)
 		self.model.eval()
 
