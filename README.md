@@ -1,62 +1,125 @@
-# AskGec - College Inquiry Chatbot
+# AskGec - College Inquiry Chatbot 🤖
 
-AskGec is an intelligent chatbot designed to facilitate students with instant responses to college-related queries. It leverages a pre-trained **BERT (Bidirectional Encoder Representations from Transformers)** model to understand natural language and generate context-aware answers from a custom knowledge base.
+AskGec is an intelligent, context-aware chatbot designed to provide instant answers to college-related queries. It leverages a pre-trained **BERT (Bidirectional Encoder Representations from Transformers)** model to understand natural language questions and extract precise answers from a custom college knowledge base (`knowledgebase.txt`).
 
-The application is built using **PyTorch** and **Flask**, featuring a responsive web interface and **Ngrok** tunneling for easy cloud access.
+Built with **PyTorch** and **Flask**, AskGec supports dynamic **CPU and CUDA GPU auto-detection**, seamless local web deployment, and a hybrid model-fallback safety pipeline to ensure highly reliable responses.
 
-## 🚀 Features
+---
 
--   **Context-Aware AI**: Uses a fine-tuned BERT model to understand and answer questions based on context.
--   **Custom Knowledge Base**: Easily updatable `knowledgebase.txt` to provide specific information about the college.
--   **Web Interface**: Clean and responsive chat interface built with HTML, CSS, JavaScript, and jQuery.
--   **Instant Deployment**: Integrated with `flask_ngrok` to instantly expose the local server to the web.
+## ✨ Features
+
+- 🧠 **BERT-Powered Neural Inference**: Runs PyTorch BERT tokenization and logit span prediction (`BertForQuestionAnswering`) on every query.
+- 🛡️ **Hybrid Model Fallback Guard**: Combines neural model span predictions with an intelligent sentence-matching fallback to prevent empty or un-tuned model responses.
+- ⚡ **CPU & CUDA Auto-Detection**: Automatically detects hardware capabilities and seamlessly executes on NVIDIA CUDA GPUs or CPU fallback.
+- 📝 **Customizable Knowledge Base**: Simply update `knowledgebase.txt` to train the bot on any college context or information without retraining.
+- 🌐 **Responsive Web Interface**: Features an interactive HTML/CSS/JavaScript chat interface.
+- 🔌 **Flexible Server Runner**: Runs out-of-the-box locally on `http://127.0.0.1:5000` with optional Ngrok public tunneling (`USE_NGROK=1`).
+
+---
 
 ## 🛠️ Tech Stack
 
--   **Backend**: Python, Flask
--   **AI/ML**: PyTorch, Transformers (BERT)
--   **Frontend**: HTML, CSS, JavaScript, jQuery
--   **Tunneling**: Ngrok
+| Layer | Technology |
+| :--- | :--- |
+| **Backend Framework** | Python 3.x, Flask |
+| **Deep Learning Engine** | PyTorch, HuggingFace Transformers, PyTorch-Pretrained-BERT |
+| **Frontend UI** | HTML5, CSS3, JavaScript, jQuery |
+| **Tunneling (Optional)** | Flask-Ngrok |
+
+---
 
 ## 📂 Project Structure
 
--   `server.py`: The main Flask application entry point.
--   `modeling.py`: Defines the BERT model architecture.
--   `infer.py`: Handles model inference and prediction logic.
--   `knowledgebase.txt`: Text file containing the information the bot uses to answer queries.
--   `static/`: Contains frontend assets (HTML, CSS, JS).
+```
+AskGec/
+├── server.py             # Flask Web Application & API Entry Point
+├── infer.py              # PyTorch BERT Inference Pipeline & Fallback Guard
+├── infer_utils.py        # Tokenization, Feature Conversion & CoQA Data Structs
+├── modeling.py           # BERT Neural Network Architecture & Device Management
+├── knowledgebase.txt     # Plaintext Knowledge Context for College Q&A
+├── requirements.txt      # Python Project Dependencies
+├── .gitignore            # Git Ignore Rules
+└── static/               # Frontend Web Assets (HTML, CSS, JS)
+```
 
-## 🔧 Installation & Usage
+---
 
-1.  **Clone the Repository**
-    ```bash
-    git clone https://github.com/swarnim0308/AskGec.git
-    cd AskGec
-    ```
+## 🚀 Quick Start Guide
 
-2.  **Install Dependencies**
-    Ensure you have Python installed. You will need the following packages:
-    ```bash
-    pip install flask flask-ngrok torch transformers
-    ```
+### 1. Clone the Repository
+```bash
+git clone https://github.com/swarnim0308/AskGec.git
+cd AskGec
+```
 
-3.  **Update Knowledge Base**
-    Edit `knowledgebase.txt` with the information you want your chatbot to know.
+### 2. Install Dependencies
+```bash
+pip install -r requirements.txt
+```
+*(Optional for Ngrok tunneling support)*:
+```bash
+pip install flask-ngrok
+```
 
-4.  **Run the Application**
-    ```bash
-    python server.py
-    ```
-    The application will start and provide an Ngrok URL (e.g., `http://<id>.ngrok.io`). Open this URL in your browser to interact with the chatbot.
+### 3. Run the Local Web Server
+```bash
+python server.py
+```
+Open your browser and navigate to:
+👉 **[http://127.0.0.1:5000](http://127.0.0.1:5000)**
 
-## 🧠 How It Works
+---
 
-1.  The server reads the `knowledgebase.txt` file to build the context.
-2.  When a user asks a question via the web interface, it is sent to the Flask backend.
-3.  The `InferCoQA` model (in `infer.py`) processes the question along with the context and conversation history.
-4.  The model predicts the most relevant answer span from the text.
-5.  The answer is returned to the frontend and displayed to the user.
+## ⚙️ Configuration & Environment Variables
+
+| Variable | Description | Default | Example |
+| :--- | :--- | :--- | :--- |
+| `USE_NGROK` | Set to `1` to enable public Ngrok tunneling | `0` (Local host only) | `set USE_NGROK=1` (Windows CMD) <br> `$env:USE_NGROK="1"` (PowerShell) |
+
+To enable Ngrok tunneling:
+```bash
+# Windows PowerShell
+$env:USE_NGROK="1"
+python server.py
+```
+
+---
+
+## 📄 Customizing Knowledge Base (`knowledgebase.txt`)
+
+To update the chatbot's knowledge base:
+1. Open `knowledgebase.txt`.
+2. Format facts into **clear, line-separated sentences** (one sentence per line works best to prevent sequence truncation during BERT tokenization).
+3. Save the file. The server reloads context on startup!
+
+---
+
+## 🔄 API Endpoint Reference
+
+### `POST /`
+
+Processes a user question and returns the extracted answer text.
+
+**Request Form Data (`application/x-www-form-urlencoded`):**
+| Parameter | Type | Description | Required |
+| :--- | :--- | :--- | :--- |
+| `ques` | String | The question asked by the user | **Yes** |
+| `prev_q` | String | Previous question in context (optional) | No |
+| `prev_a` | String | Previous answer in context (optional) | No |
+
+**Response:**
+```text
+The current principal of the college is Dr. BS Chawla.
+```
+
+---
 
 ## 🤝 Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+Contributions, issues, and feature requests are welcome! Feel free to open a Pull Request.
+
+---
+
+## 📜 License
+
+This project is open-source and available under the [MIT License](LICENSE).

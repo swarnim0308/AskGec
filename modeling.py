@@ -56,9 +56,7 @@ def gen_upper_triangle(score_s, score_e, max_len, use_cuda=False):
     # batch x context_len x context_len
     expand_score = score_s.unsqueeze(2).expand([batch_size, context_len, context_len]) +\
     score_e.unsqueeze(1).expand([batch_size, context_len, context_len])
-    score_mask = torch.ones(context_len)
-    if use_cuda:
-        score_mask = score_mask.cuda()
+    score_mask = torch.ones(context_len, device=score_s.device)
     score_mask = torch.ger(score_mask, score_mask).triu().tril(max_len - 1)
     empty_mask = score_mask.eq(0).unsqueeze(0).expand_as(expand_score)
     expand_score.data.masked_fill_(empty_mask.data, -float('inf'))
@@ -1220,7 +1218,7 @@ class BertForQuestionAnswering(BertPreTrainedModel):
         no_logits = self.no_output(sequence_output[:,0,:])
         unknown_logits = self.unknow_ouput(sequence_output[:,0,:])
 
-        score = gen_upper_triangle(start_logits, end_logits, start_logits.size(1), use_cuda=True)
+        score = gen_upper_triangle(start_logits, end_logits, start_logits.size(1), use_cuda=start_logits.is_cuda)
         ex_score = torch.cat([score,yes_logits,no_logits,unknown_logits], dim = 1)
 
         rejected = 0

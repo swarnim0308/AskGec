@@ -1,0 +1,5 @@
+flask
+torch
+transformers
+pytorch-pretrained-bert
+requests

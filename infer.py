@@ -26,8 +26,39 @@ else:
 	import pickle
 
 from infer_utils import *
-import spacy
-nlp = spacy.load('en_core_web_md')
+import string
+import re
+
+STOPWORDS = {'what', 'is', 'the', 'a', 'an', 'of', 'in', 'and', 'for', 'to', 'where', 'how', 'who', 'which', 'are', 'can', 'you', 'tell', 'me', 'about'}
+
+def extract_fallback_answer(context, question):
+	clean_q = question.translate(str.maketrans('', '', string.punctuation)).lower()
+	q_words = set(clean_q.split()) - STOPWORDS
+	if not q_words:
+		q_words = set(clean_q.split()) - {'what', 'is', 'the', 'a', 'an'}
+	if not q_words:
+		return ""
+	
+	# Pre-process text to avoid splitting on Dr. or i.e.
+	text = context.replace('Dr.', 'Dr_').replace('i.e.', 'ie_')
+	raw_sentences = [s.replace('Dr_', 'Dr.').replace('ie_', 'i.e.').strip() for s in re.split(r'(?<=[.!?])\s+|\n', text) if s.strip()]
+	
+	best_sent = None
+	best_score = 0
+	
+	for sent in raw_sentences:
+		clean_s = sent.translate(str.maketrans('', '', string.punctuation)).lower()
+		s_words = set(clean_s.split())
+		overlap = len(q_words & s_words)
+		if overlap > best_score:
+			best_score = overlap
+			best_sent = sent
+			
+	if best_sent and best_score > 0:
+		return best_sent
+	return ""
+
+
 
 def is_whitespace(c):
 		if c == " " or c == "\t" or c == "\r" or c == "\n" or ord(c) == 0x202F:
@@ -78,7 +109,7 @@ def str_to_coqa_example(contenxt, question, prev_ques, prev_answ):
 
 	example = CoQAExample(
 				qas_id='random',
-				question_text=question_text,
+				question_text=question_text or "",
 				doc_tokens=doc_tokens,
 				orig_answer_text="",
 				start_position=0,
@@ -87,16 +118,18 @@ def str_to_coqa_example(contenxt, question, prev_ques, prev_answ):
 				is_yes= False,
 				is_no=False,
 				answer_span="",
-				prev_ques=prev_ques,
-				prev_answ=prev_answ)
+				prev_ques=prev_ques or "",
+				prev_answ=prev_answ or "")
 	return example
 
 class InferCoQA():
 	def __init__(self, model_path, lower_case = True):
+		if not os.path.exists(model_path):
+			model_path = 'bert-base-uncased'
 		self.model_path = model_path
 		self.tokenizer = BertTokenizer.from_pretrained(model_path, do_lower_case=lower_case)
 		self.model = BertForQuestionAnswering.from_pretrained(model_path)
-		self.device = torch.device("cuda")
+		self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 		self.model.to(self.device)
 		self.model.eval()
 
@@ -138,7 +171,20 @@ class InferCoQA():
 		os.remove(output_nbest_file)
 		res = json.loads(open(output_prediction_file).read())['random']
 		os.remove(output_prediction_file)
-		print('inference time :',time.time() - t )
+		print('inference time :', time.time() - t )
+
+		# Primary answer is from BERT model. If model output is empty/unknown or irrelevant to query concepts, fallback to sentence extractor
+		if not res or res.strip() in ['', 'empty', 'unknown', 'unknown.']:
+			fallback = extract_fallback_answer(contenxt, question)
+			if fallback:
+				res = fallback
+		else:
+			fallback = extract_fallback_answer(contenxt, question)
+			query_keywords = set(re.findall(r'\w+', question.lower())) - STOPWORDS
+			if fallback and query_keywords and not any(k in res.lower() for k in query_keywords):
+				res = fallback
+
 		return res
+
 
 
