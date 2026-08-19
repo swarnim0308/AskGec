@@ -171,11 +171,18 @@ class InferCoQA():
 		os.remove(output_nbest_file)
 		res = json.loads(open(output_prediction_file).read())['random']
 		os.remove(output_prediction_file)
-		print('inference time :',time.time() - t )
+		print('inference time :', time.time() - t )
 
-		fallback = extract_fallback_answer(contenxt, question)
-		if fallback:
-			res = fallback
+		# Primary answer is from BERT model. If model output is empty/unknown or irrelevant to query concepts, fallback to sentence extractor
+		if not res or res.strip() in ['', 'empty', 'unknown', 'unknown.']:
+			fallback = extract_fallback_answer(contenxt, question)
+			if fallback:
+				res = fallback
+		else:
+			fallback = extract_fallback_answer(contenxt, question)
+			query_keywords = set(re.findall(r'\w+', question.lower())) - STOPWORDS
+			if fallback and query_keywords and not any(k in res.lower() for k in query_keywords):
+				res = fallback
 
 		return res
 
