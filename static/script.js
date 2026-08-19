@@ -9,7 +9,7 @@ $(function() {
     if(msg.trim() == ''){
       return false;
     }
-    generate_message(msg, 'self',"<img src='https://bootdey.com/img/Content/avatar/avatar2.png'>");
+    generate_message(msg, 'self',"<img src='/static/user_avatar.png'>");
     var buttons = [
         {
           name: 'Existing User',
@@ -31,7 +31,7 @@ $(function() {
           };
           answer = ms.text
           
-      generate_message(answer, 'user',"<img src='https://cdn.mee6.xyz/assets/logo.png'>");  
+      generate_message(answer, 'user',"<img src='/static/logo.png'>");  
         });
 
     }, 1000)

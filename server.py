@@ -44,7 +44,7 @@ def create_bot():
 	bot_id = "Government Engineering College Bilaspur"
 	context = file.read()
 	file.close()
-	bot_im = "https://cdn.mee6.xyz/assets/logo.png"
+	bot_im = "/static/logo.png"
 	table[bot_id] = {"context": context, "bot_name": bot_id, "im_url": bot_im}
 
 table = {}
